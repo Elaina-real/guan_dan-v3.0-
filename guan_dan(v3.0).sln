@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35931.197 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "guan_dan(v3.0)", "guan_dan(v3.0)\guan_dan(v3.0).vcxproj", "{DABB7839-B107-43DE-B6BB-8939C620A9E5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DABB7839-B107-43DE-B6BB-8939C620A9E5}.Debug|x64.ActiveCfg = Debug|x64
+		{DABB7839-B107-43DE-B6BB-8939C620A9E5}.Debug|x64.Build.0 = Debug|x64
+		{DABB7839-B107-43DE-B6BB-8939C620A9E5}.Debug|x86.ActiveCfg = Debug|Win32
+		{DABB7839-B107-43DE-B6BB-8939C620A9E5}.Debug|x86.Build.0 = Debug|Win32
+		{DABB7839-B107-43DE-B6BB-8939C620A9E5}.Release|x64.ActiveCfg = Release|x64
+		{DABB7839-B107-43DE-B6BB-8939C620A9E5}.Release|x64.Build.0 = Release|x64
+		{DABB7839-B107-43DE-B6BB-8939C620A9E5}.Release|x86.ActiveCfg = Release|Win32
+		{DABB7839-B107-43DE-B6BB-8939C620A9E5}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {47CE65B2-9F94-4CDE-A5A3-54554B5FA357}
+	EndGlobalSection
+EndGlobal
