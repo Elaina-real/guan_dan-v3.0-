@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 #include <string>
-//#include "game.h"
+#include <vector>
 
 using namespace std;
 
@@ -23,14 +23,19 @@ private:
 	Rank rank;
 	bool isLevel;
 	bool isWild;
+	bool isSelected;
 public:
-	Card(Suit s, Rank r, bool level = false,bool wild = false) : suit(s), rank(r), isLevel(level),isWild(wild) {}
-	Card(Suit s, int r, bool level = false, bool wild = false) : suit(s), rank(static_cast<Rank>(r)), isLevel(level),isWild(wild) {} // Add this constructor to handle integer rank values  
+	Card(Suit s, Rank r, bool level = false,bool wild = false,bool selected = false) : suit(s), rank(r), isLevel(level),isWild(wild),isSelected(selected) {}
+	Card(Suit s, int r, bool level = false, bool wild = false, bool selected = false) : suit(s), rank(static_cast<Rank>(r)), isLevel(level),isWild(wild), isSelected(selected) {} // Add this constructor to handle integer rank values  
 
 	Suit getSuit() const;
 	Rank getRank() const;
 	bool isLevelCard()const;
 	bool isWildCard()const;
+	bool isSelectedCard()const;
+	void toggleSelected(); // 新增：切换选中状态
+	void setSelected(bool selected); // 新增：设置选中状态
+
 	friend ostream& operator<<(ostream& os, const Card& card);
 	bool operator==(const Card& other)const;
 	bool operator>(const Card& other)const;

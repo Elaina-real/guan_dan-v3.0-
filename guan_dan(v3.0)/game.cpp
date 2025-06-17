@@ -1,9 +1,19 @@
 #include "game.h"
 #include "player.h" // 如果需要Player完整定义
+#include <Windows.h>
+#include "easyx.h"
 
 
 Game::Game(vector<shared_ptr<Player>> playerList, Rank startLevel)
-	: players(playerList), currentLevel(startLevel),scoreFactor(1)	 {}
+	: players(playerList), currentLevel(startLevel), scoreFactor(1),graphical(this){
+	// 设置每个Player的Game引用
+	for (auto& player : players) {
+		player->setGame(this);
+		player->setGraphical(&graphical); // 设置图形化对象的Player引用
+	}
+	//graphical.setGame(this); // 设置图形化对象的Game引用
+	graphical.setCardCounterPtr(&cardCounter);
+}
 
 Game::~Game(){}
 
@@ -15,6 +25,11 @@ Rank Game::getLevel() const
 int Game::getScoreFactor()const
 {
 	return scoreFactor;
+}
+
+const CardGroup* Game::getLastPlay()const
+{
+	return lastPlay.get();
 }
 
 void Game::doubleScoreFactor()
@@ -117,6 +132,8 @@ void Game::aRoundGame()
    deck->shuffle();
    dealCards();
 
+
+
    //在非第一局游戏时，进贡
    if(players[0]->getARoundRank()!=NotRanked)
 	   tribute();
@@ -154,6 +171,34 @@ void Game::aRoundGame()
 
 	   unique_ptr<CardGroup> bridge = nullptr;
 
+	   //
+	   //char isShowCardCounter;
+	   //cout << "\n是否查看记牌器? (y/n): ";
+	   //cin >> isShowCardCounter;
+	   //cin.ignore();
+
+	   //if (tolower(isShowCardCounter) == 'y') {
+		  // // 询问从哪位玩家的角度查看
+		  // cout << "从哪位玩家的角度查看记牌器？" << endl;
+		  // for (size_t i = 0; i < players.size(); i++) {
+			 //  cout << (i + 1) << ". " << players[i]->getName() << endl;
+		  // }
+
+		  // int playerChoice;
+		  // cout << "请选择玩家序号(1-" << players.size() << "): ";
+		  // cin >> playerChoice;
+		  // cin.ignore();
+
+		  // if (playerChoice >= 1 && playerChoice <= players.size()) {
+			 //  showCardCounterExcludePlayer(players[playerChoice - 1]->getHandCards());
+		  // }
+		  // else {
+			 //  cout << "无效的选择，显示完整记牌器。" << endl;
+			 //  showCardCounter();
+		  // }
+	   //}
+	   //
+
 	   bridge = players[currentPlayerIndex]->playCards(move(lastPlay), *this);
 
 		//// 保存当前lastPlay的副本
@@ -171,6 +216,7 @@ void Game::aRoundGame()
 
 	   if (bridge == nullptr)
 	   {
+
 		   passCount = passCount + 1;
 		   currentPlayerIndex = (currentPlayerIndex + 1) % players.size();
 		   continue;
@@ -249,6 +295,41 @@ void Game::aRoundGame()
    }
    currentLevel = firstPlayer->getLevel();//更新当前level
 
+   // 显示结算界面
+   graphical.drawSettlementInterface();
+   bool continueGame = true;
+   bool exitSettlement = false;
+
+   // 处理结算界面输入
+   while (!exitSettlement) {
+	   exitSettlement = graphical.handleSettlementInterfaceInput(continueGame);
+	   Sleep(10); // 减轻CPU负担
+   }
+
+   // 如果选择不继续，重置整个游戏并返回到主菜单
+   if (!continueGame) {
+	   resetGame();
+
+	   // 重新显示开始界面并处理输入
+	   graphical.drawStartInterface();
+
+	   int gameMode = -1;
+	   bool exitStartInterface = false;
+
+	   while (!exitStartInterface) {
+		   exitStartInterface = graphical.handleStartInterfaceInput(gameMode);
+		   Sleep(10);
+	   }
+
+	   if (gameMode == 1) {
+		   // 重新开始新游戏
+		   aWholeGame();
+	   }
+	   else {
+		   // 退出游戏
+		   exit(0); // 或使用其他方式退出
+	   }
+   }
 }
 
 void Game::setLastPlay(unique_ptr<CardGroup> newPlay)
@@ -305,47 +386,44 @@ void Game::aWholeGame()
 			// 进行一局游戏
 			aRoundGame();
 
-			// 显示本局结果
-			cout << "\n========== 第" << roundCount << "局游戏结果 ==========" << endl;
-			for (auto& player : players)
-			{
-				cout << player->getName() << " 级别: " << player->getLevel();
+			//// 显示本局结果
+			//cout << "\n========== 第" << roundCount << "局游戏结果 ==========" << endl;
+			//for (auto& player : players)
+			//{
+			//	cout << player->getName() << " 级别: " << player->getLevel();
 
-				// 显示玩家本局排名
-				switch (player->getARoundRank())
-				{
-				case First:
-					cout << " (第一名)";
-					break;
-				case Second:
-					cout << " (第二名)";
-					break;
-				case Third:
-					cout << " (第三名)";
-					break;
-				case Fourth:
-					cout << " (第四名)";
-					break;
-				default:
-					cout << " (未排名)";
-					break;
-				}
-				cout << endl;
-			}
+			//	// 显示玩家本局排名
+			//	switch (player->getARoundRank())
+			//	{
+			//	case First:
+			//		cout << " (第一名)";
+			//		break;
+			//	case Second:
+			//		cout << " (第二名)";
+			//		break;
+			//	case Third:
+			//		cout << " (第三名)";
+			//		break;
+			//	case Fourth:
+			//		cout << " (第四名)";
+			//		break;
+			//	default:
+			//		cout << " (未排名)";
+			//		break;
+			//	}
+			//	cout << endl;
+			//}
 
-			// 添加记牌器查询选项
-			char isShowCardCounter;
-			cout << "\n是否查看记牌器? (y/n): ";
-			cin >> isShowCardCounter;
-			cin.ignore();
+			//// 添加记牌器查询选项
+			//char isShowCardCounter;
+			//cout << "\n是否查看记牌器? (y/n): ";
+			//cin >> isShowCardCounter;
+			//cin.ignore();
 
-			if (tolower(isShowCardCounter) == 'y')
-			{
-				showCardCounter();
-			}
-
-			// 重置游戏状态，准备下一局
-			resetRoundGame();
+			//if (tolower(isShowCardCounter) == 'y')
+			//{
+			//	showCardCounter();
+			//}
 
 			// 判断是否有队伍已经赢了
 			if (isAWholeGameOver())
@@ -355,75 +433,96 @@ void Game::aWholeGame()
 
 			roundCount++;
 
-			// 询问是否继续下一局
-			char continueGame;
-			cout << "\n是否继续下一局? (y/n): ";
-			cin >> continueGame;
-			cin.ignore();
+			//		// 询问是否继续下一局
+			//		char continueGame;
+			//		cout << "\n是否继续下一局? (y/n): ";
+			//		cin >> continueGame;
+			//		cin.ignore();
 
-			if (tolower(continueGame) != 'y')
-			{
-				cout << "游戏提前结束!" << endl;
-				break;
-			}
+			//		if (tolower(continueGame) != 'y')
+			//		{
+			//			cout << "游戏提前结束!" << endl;
+			//			break;
+			//		}
+			//	}
 		}
+				// 显示整场游戏结果
+			cout << "\n========== 整场游戏结果 ==========" << endl;
+			cout << "共进行了 " << roundCount << " 局游戏" << endl;
 
-		// 显示整场游戏结果
-		cout << "\n========== 整场游戏结果 ==========" << endl;
-		cout << "共进行了 " << roundCount << " 局游戏" << endl;
+			// 检查哪个队伍赢得了游戏
+			Team winningTeam = Red;
+			bool hasWinner = false;
 
-		// 检查哪个队伍赢得了游戏
-		Team winningTeam = Red;
-		bool hasWinner = false;
-
-		for (auto& player : players)
-		{
-			if (player->getLevel() == ace)
-			{
-				winningTeam = player->getTeam();
-				hasWinner = true;
-				break;
-			}
-		}
-
-		if (hasWinner)
-		{
-			cout << (winningTeam == Red ? "红队" : "蓝队") << "获得了最终胜利！" << endl;
-			cout << "获胜队伍成员: ";
 			for (auto& player : players)
 			{
-				if (player->getTeam() == winningTeam)
+				if (player->getLevel() == ace)
 				{
-					player->addWin();
-					cout << player->getName() << " ";
+					winningTeam = player->getTeam();
+					hasWinner = true;
+					break;
 				}
 			}
-			cout << endl;
-		}
-		else
-		{
-			cout << "游戏提前结束，没有队伍达到获胜条件。" << endl;
-		}
 
-		showLeaderboard();
+			if (hasWinner)
+			{
+				cout << (winningTeam == Red ? "红队" : "蓝队") << "获得了最终胜利！" << endl;
+				cout << "获胜队伍成员: ";
+				for (auto& player : players)
+				{
+					if (player->getTeam() == winningTeam)
+					{
+						player->addWin();
+						cout << player->getName() << " ";
+					}
+				}
+				cout << endl;
+			}
+			else
+			{
+				cout << "游戏提前结束，没有队伍达到获胜条件。" << endl;
+			}
 
-		char restart;
-		cout << "\n是否再来一场游戏? (y/n): ";
-		cin >> restart;
-		cin.ignore();
+			showLeaderboard();
 
-		if (tolower(restart) == 'y')
-		{
-			// 重置游戏状态以准备新一场游戏
-			resetRoundGame();
-			playAgain = true;
+			// 显示最终结算界面
+			graphical.drawSettlementInterface(true); // 传递true表示游戏结束
+
+			bool continueGame = false;
+			bool exitSettlement = false;
+
+			while (!exitSettlement) {
+				exitSettlement = graphical.handleSettlementInterfaceInput(continueGame);
+				Sleep(10);
+			}
+
+			if (continueGame) {
+				// 重置游戏状态以准备新一场游戏
+				resetGame();
+				playAgain = true;
+			}
+			else {
+				playAgain = false;
+			}
 		}
-		else
-		{
-			playAgain = false;
-		}
-	}
+	
+		//	char restart;
+		//	cout << "\n是否再来一场游戏? (y/n): ";
+		//	cin >> restart;
+		//	cin.ignore();
 
+		//	if (tolower(restart) == 'y')
+		//	{
+		//		// 重置游戏状态以准备新一场游戏
+		//		resetRoundGame();
+		//		playAgain = true;
+		//	}
+		//	else
+		//	{
+		//		playAgain = false;
+		//	}
+		//}
+	
 	cout << "========== 游戏会话结束 ==========" << endl;
 }
 
@@ -532,3 +631,8 @@ void Game::showCardCounter() const {
 void Game::resetCardCounter() {
 	cardCounter.reset();
 }
+
+void Game::showCardCounterExcludePlayer(const vector<Card>& playerCards) const {
+	cardCounter.displayStatisticsExcludePlayer(playerCards);
+}
+

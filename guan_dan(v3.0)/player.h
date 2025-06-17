@@ -3,11 +3,8 @@
 #include "card.h"
 #include "cardgroup.h"
 #include "cardgroupfactory.h"
+#include "graphical.h"
 #include <memory>
-
-//player头文件包含了Player类和它的子类:HumanPlayer和AIPlayer
-//玩家出牌的操作主要在player的子类的playCards函数中实现
-//AI玩家目前实现了简单的出牌逻辑，自动选择出牌，还不会用癞子牌
 
 class Player
 {
@@ -20,15 +17,19 @@ protected:
 	PlayerRank gameRank;
 	Team team;
 	int totalWins;
+	Game* gamePtr; // 改为指针，初始可以为nullptr
+	Graphical* graphicalPtr;
 public:
 	Player(string n,Team t) :name(n),team(t), score(1000),playerCurrentLevel(two),aRoundRank(NotRanked),gameRank(NotRanked),
-	totalWins(0){}
+		totalWins(0), gamePtr(nullptr), graphicalPtr(nullptr) {	}
 	virtual ~Player() {}
+	void setGame(Game* g) { gamePtr = g; }
+	void setGraphical(Graphical* g) { graphicalPtr = g; }
 
 	string getName() const;
 	Team getTeam() const;
 	Rank getLevel() const;
-	vector<Card> getHandCards() const;
+	vector<Card>& getHandCards();
 	int getScore() const;
 	PlayerRank getARoundRank() const;
 	void setARoundRank(PlayerRank rank);

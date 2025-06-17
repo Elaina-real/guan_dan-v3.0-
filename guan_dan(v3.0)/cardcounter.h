@@ -42,4 +42,13 @@ public:
 
     // 显示记牌器统计信息
     void displayStatistics() const;
+
+    // 新增：显示记牌器统计信息，但排除指定玩家的手牌
+    void displayStatisticsExcludePlayer(const vector<Card>& playerCards) const;
+
+    // 获取特定点数的剩余牌数（所有花色），但排除玩家的手牌
+    int getRemainingCountByRankExcludePlayer(Rank rank, const vector<Card>& playerCards) const;
+
+    // 获取特定花色的剩余牌数（所有点数），但排除玩家的手牌
+    int getRemainingCountBySuitExcludePlayer(Suit suit, const vector<Card>& playerCards) const;
 };
