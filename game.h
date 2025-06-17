@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <memory>  // 添加此行支持shared_ptr和unique_ptr
 #include "card.h"  // 首先包含card.h以获取Suit和Rank枚举
+#include "graphical.h"
+
 
 using namespace std;
 
@@ -39,14 +41,18 @@ private:
     unordered_map < PlayerRank, shared_ptr<Player>> rankingList;
     CardCounter cardCounter;
     int scoreFactor;
-
+	Graphical graphical; // 图形化对象，用于绘制牌桌和显示信息
 public:
     Game(vector<shared_ptr<Player>> playerList, Rank startLevel = two);
     ~Game();
 
     Rank getLevel() const;
-    int getScoreFactor() const;// 新增：获取当前倍数
-    void doubleScoreFactor();   // 新增：倍数翻倍
+    int getScoreFactor() const;//获取当前倍数
+    void doubleScoreFactor();   //倍数翻倍
+    const CardGroup* getLastPlay() const;
+
+    //获取玩家
+	vector<shared_ptr<Player>> getPlayers() const { return players; }
 
 	void resetRoundGame();//重置一局游戏
     void setLastPlay(unique_ptr<CardGroup> newPlay);
@@ -68,4 +74,6 @@ public:
     void updateCardCounter(const vector<Card>& playedCards);
     void showCardCounter() const;
     void resetCardCounter();
+    void showCardCounterExcludePlayer(const vector<Card>& playerCards) const;
+
 };

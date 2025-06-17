@@ -3,6 +3,8 @@
 #include "cardgroup.h"
 #include "player.h"
 #include <sstream>
+#include <conio.h>
+#include <graphics.h>
 
 static bool compareCards(const Card& a, const Card& b)//排序的依据
 {
@@ -27,7 +29,7 @@ Rank Player::getLevel() const
 	return playerCurrentLevel;
 }
 
-vector<Card> Player::getHandCards() const
+vector<Card>& Player::getHandCards()
 {
 	return handCards;
 }
@@ -135,9 +137,257 @@ void Player::resetLevel()
 
 
 //HumanPlayer
+//unique_ptr<CardGroup> HumanPlayer::playCards(const unique_ptr<CardGroup>& lastPlay, Game& game)
+//{
+//	cout << "\n======" << name << "的回合======" << endl;
+//	while (true)
+//	{
+//		//显示上家出牌(如果有
+//		if (lastPlay != nullptr)
+//		{
+//			cout << "上家出牌:";
+//			for (const auto& card : lastPlay->getCards())
+//			{
+//				cout << card << " ";
+//			}
+//			cout << endl;
+//		}
+//
+//		//展示手牌
+//		showHand();
+//
+//		// 玩家可以选择"过"
+//		cout << "可输入'c'查看记牌器,请选择要出的牌（输入牌的编号，从1开始，用空格分隔，输入0表示不出）: ";
+//		string input;
+//		getline(cin, input);
+//
+//		if (input == "c") 
+//		{
+//			// 显示记牌器
+//			//game.showCardCounter();
+//			game.showCardCounterExcludePlayer(handCards);
+//			// 递归调用自身，让玩家继续选择出牌
+//			return playCards(lastPlay, game);
+//		}
+//
+//		if (lastPlay == nullptr && input == "0")
+//		{
+//			cout << "您必须出牌\n" << endl;
+//			continue;//重新输入
+//		}
+//
+//		//检查是否选择过
+//		if (input == "0" || input.empty())
+//		{
+//			cout << name << "选择过" << endl << endl;
+//			return nullptr;//不出牌
+//		}
+//
+//
+//		vector<int> selectedNum;
+//		istringstream iss(input);
+//		int index;
+//		while (iss >> index)
+//		{
+//			if (index > 0 && index <= handCards.size())
+//			{
+//				selectedNum.push_back(index - 1);
+//			}
+//			else
+//			{
+//				cout << "无效的输入:" << index << endl << endl;
+//				continue;//重新输入
+//			}
+//		}
+//
+//		//检查是否选择了重复的牌
+//		sort(selectedNum.begin(), selectedNum.end(), greater<int>());
+//		if (adjacent_find(selectedNum.begin(), selectedNum.end()) != selectedNum.end())
+//		{
+//			cout << "请不要重复选择\n" << endl;
+//			continue;//重新输入
+//		}
+//
+//		vector<Card> selectedCards;
+//		for (int idx : selectedNum)
+//		{
+//			selectedCards.push_back(handCards[idx]);
+//		}
+//
+//		//检查是否选择了癞子牌
+//		int thisWildCardCount = 0;
+//		vector<size_t> wildCardIndex; // 记录癞子牌的位置
+//		for (size_t i = 0; i < selectedCards.size(); i++)
+//		{
+//			if (selectedCards[i].isWildCard())
+//			{
+//				thisWildCardCount++;
+//				wildCardIndex.push_back(i);
+//			}
+//		}
+//
+//		unique_ptr<CardGroup> cardGroup = nullptr;
+//
+//		if (thisWildCardCount == 0)//没有癞子牌则正常比较
+//		{
+//			cardGroup = CardGroupFactory::createCardGroup(selectedCards, game);
+//
+//			if (cardGroup == nullptr)
+//			{
+//				cout << "无效的牌型，请重新选择\n" << endl;
+//				continue;//重新输入
+//			}
+//			
+//			if (lastPlay == nullptr) // 如果是第一个出牌
+//			{
+//				removeCards(selectedCards);
+//				cout << name << "出牌: ";
+//				for (const auto& card : selectedCards)
+//				{
+//					cout << card << " ";
+//				}
+//				cout << endl << endl;
+//
+//				game.updateCardCounter(cardGroup->getCards());
+//				auto cardGroupCopy = CardGroupFactory::createCardGroup(selectedCards, game);
+//				// 直接使用setLastPlay更新游戏状态
+//				game.setLastPlay(move(cardGroup));
+//				return cardGroupCopy;
+//			}
+//			else if (*cardGroup > *lastPlay) // 如果可以压制上家
+//			{
+//				removeCards(selectedCards);
+//				cout << name << "出牌: ";
+//				for (const auto& card : selectedCards)
+//				{
+//					cout << card << " ";
+//				}
+//				cout << endl << endl;
+//				game.updateCardCounter(cardGroup->getCards());
+//				auto cardGroupCopy = CardGroupFactory::createCardGroup(selectedCards, game);
+//				// 直接使用setLastPlay更新游戏状态
+//				game.setLastPlay(move(cardGroup));
+//				return cardGroupCopy;
+//			}
+//			else
+//			{
+//				cout << "出牌失败，无效牌型或不能压制上家的牌\n" << endl;
+//				continue;//重新输入
+//			}
+//			//if (lastPlay == nullptr || *cardGroup > *lastPlay)
+//			//{
+//			//	removeCards(selectedCards);
+//			//	cout << name << "出牌: ";
+//			//	for (const auto& card : selectedCards)
+//			//	{
+//			//		cout << card << " ";
+//			//	}
+//			//	cout << endl << endl;
+//			//	return cardGroup;
+//			//}
+//			//else
+//			//{
+//			//	cout << "出牌失败，无效牌型或不能压制上家的牌\n" << endl;
+//			//	continue;//重新输入
+//			//}
+//		}
+//		else//有的话特殊处理
+//		{
+//			cardGroup = make_unique<Single>(selectedCards, game);//随意创建一个子类的对象用以进入比较逻辑
+//
+//			if (lastPlay == nullptr) // 如果是第一个出牌
+//			{
+//				vector<Card> tempCards = cardGroup->getCards();
+//				unique_ptr<CardGroup> newCardGroup = CardGroupFactory::createCardGroup(tempCards, game);
+//				removeCards(selectedCards);
+//				cout << name << "出牌: ";
+//				for (const auto& card : selectedCards)
+//				{
+//					cout << card << " ";
+//				}
+//				cout << endl << endl;
+//
+//				game.updateCardCounter(cardGroup->getCards());
+//				auto cardGroupCopy = CardGroupFactory::createCardGroup(selectedCards, game);
+//				// 直接使用setLastPlay更新游戏状态
+//				game.setLastPlay(move(cardGroupCopy));
+//				return cardGroup;
+//			}
+//			else if (*cardGroup > *lastPlay) // 如果可以压制上家
+//			{
+//				vector<Card> tempCards = cardGroup->getCards();
+//				unique_ptr<CardGroup> newCardGroup = CardGroupFactory::createCardGroup(tempCards, game);
+//				removeCards(selectedCards);
+//				cout << name << "出牌: ";
+//				for (const auto& card : selectedCards)
+//				{
+//					cout << card << " ";
+//				}
+//				cout << endl << endl;
+//				return newCardGroup;
+//			}
+//			else
+//			{
+//				cout << "出牌失败，无效牌型或不能压制上家的牌\n" << endl;
+//				continue;//重新输入
+//			}
+//
+//			//if (lastPlay == nullptr || *cardGroup > *lastPlay)
+//			//{
+//			//	vector <Card> tempCards = cardGroup->getCards();
+//			//	unique_ptr<CardGroup> newCardGroup = CardGroupFactory::createCardGroup(tempCards, game);
+//			//	removeCards(selectedCards);
+//			//	cout << name << "出牌: ";
+//			//	for (const auto& card : selectedCards)
+//			//	{
+//			//		cout << card << " ";
+//			//	}
+//			//	cout << endl << endl;
+//			//	return newCardGroup;
+//			//}
+//			//else
+//			//{
+//			//	cout << "出牌失败，无效牌型或不能压制上家的牌\n" << endl;
+//			//	continue;//重新输入
+//			//}
+//		}
+//		//unique_ptr<CardGroup> cardGroup = Card(selectedCards, game);
+//
+//		//unique_ptr<CardGroup> cardGroup = nullptr;
+//
+//
+//		//if (cardGroup == nullptr)
+//		//{
+//		//	cout << "无效的牌型，请重新选择\n" << endl;
+//		//	continue;//重新输入
+//		//}
+//		//else
+//		//if (lastPlay == nullptr || *cardGroup > *lastPlay)
+//		//{
+//		//	removeCards(selectedCards);
+//		//	cout << name << "出牌: ";
+//		//	for (const auto& card : selectedCards)
+//		//	{
+//		//		cout << card << " ";
+//		//	}
+//		//	cout << endl << endl;
+//		//	return cardGroup;
+//		//}
+//		//else
+//		//{
+//		//	cout << "出牌失败，无效牌型或不能压制上家的牌\n" << endl;
+//		//	continue;//重新输入
+//		//}
+//	}
+//}
+
 unique_ptr<CardGroup> HumanPlayer::playCards(const unique_ptr<CardGroup>& lastPlay, Game& game)
 {
 	cout << "\n======" << name << "的回合======" << endl;
+
+	graphicalPtr->clearLastPlay(0); // 清除上家出牌的显示
+
+	bool isSkip = false;
 	while (true)
 	{
 		//显示上家出牌(如果有
@@ -151,64 +401,31 @@ unique_ptr<CardGroup> HumanPlayer::playCards(const unique_ptr<CardGroup>& lastPl
 			cout << endl;
 		}
 
+		graphicalPtr->drawUI(0);
+
+
+		vector<Card> selectedCards0;
+
 		//展示手牌
 		showHand();
 
-		// 玩家可以选择"过"
-		cout << "可输入'c'查看记牌器,请选择要出的牌（输入牌的编号，从1开始，用空格分隔，输入0表示不出）: ";
-		string input;
-		getline(cin, input);
+		graphicalPtr->handleUserInput(selectedCards0, isSkip);
 
-		if (input == "c") 
-		{
-			// 显示记牌器
-			game.showCardCounter();
-			// 递归调用自身，让玩家继续选择出牌
-			return playCards(lastPlay, game);
-		}
 
-		if (lastPlay == nullptr && input == "0")
-		{
-			cout << "您必须出牌\n" << endl;
-			continue;//重新输入
-		}
-
-		//检查是否选择过
-		if (input == "0" || input.empty())
+		if (isSkip) // 如果选择了不出牌
 		{
 			cout << name << "选择过" << endl << endl;
-			return nullptr;//不出牌
-		}
-
-
-		vector<int> selectedNum;
-		istringstream iss(input);
-		int index;
-		while (iss >> index)
-		{
-			if (index > 0 && index <= handCards.size())
-			{
-				selectedNum.push_back(index - 1);
-			}
-			else
-			{
-				cout << "无效的输入:" << index << endl << endl;
-				continue;//重新输入
-			}
-		}
-
-		//检查是否选择了重复的牌
-		sort(selectedNum.begin(), selectedNum.end(), greater<int>());
-		if (adjacent_find(selectedNum.begin(), selectedNum.end()) != selectedNum.end())
-		{
-			cout << "请不要重复选择\n" << endl;
-			continue;//重新输入
+			return nullptr; // 不出牌
 		}
 
 		vector<Card> selectedCards;
-		for (int idx : selectedNum)
+		for (auto& card : handCards)
 		{
-			selectedCards.push_back(handCards[idx]);
+			if (card.isSelectedCard())
+			{
+				selectedCards.push_back(card);
+				card.setSelected(false);
+			}
 		}
 
 		//检查是否选择了癞子牌
@@ -234,7 +451,7 @@ unique_ptr<CardGroup> HumanPlayer::playCards(const unique_ptr<CardGroup>& lastPl
 				cout << "无效的牌型，请重新选择\n" << endl;
 				continue;//重新输入
 			}
-			
+
 			if (lastPlay == nullptr) // 如果是第一个出牌
 			{
 				removeCards(selectedCards);
@@ -246,6 +463,10 @@ unique_ptr<CardGroup> HumanPlayer::playCards(const unique_ptr<CardGroup>& lastPl
 				cout << endl << endl;
 
 				game.updateCardCounter(cardGroup->getCards());
+
+				graphicalPtr->updateLastPlay(0, selectedCards);
+				graphicalPtr->drawUI(0);
+
 				auto cardGroupCopy = CardGroupFactory::createCardGroup(selectedCards, game);
 				// 直接使用setLastPlay更新游戏状态
 				game.setLastPlay(move(cardGroup));
@@ -260,7 +481,12 @@ unique_ptr<CardGroup> HumanPlayer::playCards(const unique_ptr<CardGroup>& lastPl
 					cout << card << " ";
 				}
 				cout << endl << endl;
+
 				game.updateCardCounter(cardGroup->getCards());
+
+				graphicalPtr->updateLastPlay(0, selectedCards0);
+				graphicalPtr->drawUI(0);
+
 				auto cardGroupCopy = CardGroupFactory::createCardGroup(selectedCards, game);
 				// 直接使用setLastPlay更新游戏状态
 				game.setLastPlay(move(cardGroup));
@@ -305,6 +531,10 @@ unique_ptr<CardGroup> HumanPlayer::playCards(const unique_ptr<CardGroup>& lastPl
 				cout << endl << endl;
 
 				game.updateCardCounter(cardGroup->getCards());
+
+				graphicalPtr->updateLastPlay(0, newCardGroup->getCards());
+				graphicalPtr->drawUI(0);
+
 				auto cardGroupCopy = CardGroupFactory::createCardGroup(selectedCards, game);
 				// 直接使用setLastPlay更新游戏状态
 				game.setLastPlay(move(cardGroupCopy));
@@ -321,6 +551,10 @@ unique_ptr<CardGroup> HumanPlayer::playCards(const unique_ptr<CardGroup>& lastPl
 					cout << card << " ";
 				}
 				cout << endl << endl;
+
+				graphicalPtr->updateLastPlay(0, newCardGroup->getCards());
+				graphicalPtr->drawUI(0);
+
 				return newCardGroup;
 			}
 			else
@@ -365,7 +599,7 @@ unique_ptr<CardGroup> HumanPlayer::playCards(const unique_ptr<CardGroup>& lastPl
 		//	cout << name << "出牌: ";
 		//	for (const auto& card : selectedCards)
 		//	{
-		//		cout << card << " ";
+		//		cout << card << " ";graphicalPtr->
 		//	}
 		//	cout << endl << endl;
 		//	return cardGroup;
@@ -423,6 +657,17 @@ unique_ptr<CardGroup> AIPlayer::playCards(const unique_ptr<CardGroup>& lastPlay,
 {
 	cout << "\n======" << name << "的回合======" << endl;
 
+	//获取自己在玩家数组中的索引
+	int index = -1;
+	for (size_t i = 0; i < game.getPlayers().size(); ++i) {
+		if (game.getPlayers()[i]->getName() == name) {
+			index = static_cast<int>(i);
+			break;
+		}
+	}
+
+	graphicalPtr->clearLastPlay(index);
+
 	// 展示手牌
 	showHand();
 
@@ -434,6 +679,9 @@ unique_ptr<CardGroup> AIPlayer::playCards(const unique_ptr<CardGroup>& lastPlay,
 		}
 		cout << endl;
 	}
+
+	graphicalPtr->drawUI(index);
+	Sleep(300); // 让玩家有时间看清当前状态
 
 	// 如果是首家出牌（没有上家牌）或者已经没有玩家能出牌
 	if (lastPlay == nullptr) {
@@ -453,6 +701,12 @@ unique_ptr<CardGroup> AIPlayer::playCards(const unique_ptr<CardGroup>& lastPlay,
 				cout << endl;
 
 				game.updateCardCounter(selectedCards);
+
+				graphicalPtr->updateLastPlay(index, selectedCards);
+				graphicalPtr->drawUI(index);
+				Sleep(300); // 让玩家有时间看清当前状态
+
+
 				auto cardGroupCopy = CardGroupFactory::createCardGroup(selectedCards, game);
 				// 直接使用setLastPlay更新游戏状态
 				game.setLastPlay(move(cardGroup));
@@ -467,6 +721,12 @@ unique_ptr<CardGroup> AIPlayer::playCards(const unique_ptr<CardGroup>& lastPlay,
 		cout << name << "出牌: " << selectedCards[0] << endl;
 
 		game.updateCardCounter(selectedCards);
+
+		graphicalPtr->updateLastPlay(index, selectedCards);
+		graphicalPtr->drawUI(index);
+		Sleep(300); // 让玩家有时间看清当前状态
+
+
 		auto cardGroupCopy = CardGroupFactory::createCardGroup(selectedCards, game);
 		// 直接使用setLastPlay更新游戏状态
 		game.setLastPlay(move(cardGroup));
@@ -496,8 +756,15 @@ unique_ptr<CardGroup> AIPlayer::playCards(const unique_ptr<CardGroup>& lastPlay,
 				for (const auto& card : selectedCards) {
 					cout << card << " ";
 				}
+
 				cout << endl;
+
 				game.updateCardCounter(selectedCards);
+
+				graphicalPtr->updateLastPlay(index, selectedCards);
+				graphicalPtr->drawUI(index);
+				Sleep(300); // 让玩家有时间看清当前状态
+
 				auto cardGroupCopy = CardGroupFactory::createCardGroup(selectedCards, game);
 				// 直接使用setLastPlay更新游戏状态
 				game.setLastPlay(move(cardGroup));
@@ -507,6 +774,12 @@ unique_ptr<CardGroup> AIPlayer::playCards(const unique_ptr<CardGroup>& lastPlay,
 
 		// 找不到能压制的牌，选择过牌
 		cout << name << "选择过" << endl;
+
+
+
+		graphicalPtr->drawUI(index);
+		Sleep(300); // 让玩家有时间看清当前状态
+
 		return nullptr;
 	}
 }
