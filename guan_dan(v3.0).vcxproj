@@ -132,6 +132,7 @@
     <ClCompile Include="cardgroup.cpp" />
     <ClCompile Include="cardgroupfactory.cpp" />
     <ClCompile Include="game.cpp" />
+    <ClCompile Include="graphical.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="player.cpp" />
   </ItemGroup>
@@ -141,6 +142,7 @@
     <ClInclude Include="cardgroup.h" />
     <ClInclude Include="cardgroupfactory.h" />
     <ClInclude Include="game.h" />
+    <ClInclude Include="graphical.h" />
     <ClInclude Include="player.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>

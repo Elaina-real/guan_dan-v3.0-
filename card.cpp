@@ -24,6 +24,21 @@ bool Card::isWildCard()const
 	return isWild;
 }
 
+bool Card::isSelectedCard()const
+{
+	return isSelected;
+}
+
+void Card::toggleSelected()
+{
+	isSelected = !isSelected;
+}
+
+void Card::setSelected(bool selected)
+{
+	isSelected = selected;
+}
+
 ostream& operator<<(ostream& os, const Card& card)
 {
 	switch (card.getSuit())
