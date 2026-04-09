@@ -1,99 +1,126 @@
 #pragma once
-#include "card.h"
+
 #include <unordered_map>
 #include <vector>
 #include <utility>
-#include "graphics.h"
-
 #include <windows.h>
 #include <mmsystem.h>
-#pragma comment(lib, "winmm.lib") 
 
-class Player;
-class CardCounter;
+#include "card.h"
+#include "graphics.h"
+
+#pragma comment(lib, "winmm.lib") 
 
 using namespace std;
 
+// 前向声明
+class Player;
+class CardCounter;
 class Game;
 
+/**
+ * 卡片矩形区域结构体
+ * 用于存储卡片的位置和大小信息
+ */
 struct CardRect {
-	int x;      // 卡片左上角x坐标
-	int y;      // 卡片左上角y坐标 
-	int width;  // 卡片宽度
-	int height; // 卡片高度
-	int index;  // 卡片在数组中的索引
+    int x;      // 卡片左上角x坐标
+    int y;      // 卡片左上角y坐标 
+    int width;  // 卡片宽度
+    int height; // 卡片高度
+    int index;  // 卡片在数组中的索引
 };
 
+/**
+ * 按钮结构体
+ * 用于存储按钮的位置、大小和状态信息
+ */
 struct Button {
-	int x;      // 按钮左上角x坐标
-	int y;      // 按钮左上角y坐标
-	int width;  // 按钮宽度
-	int height; // 按钮高度
-	string text; // 按钮文本
-	bool isEnabled; // 按钮是否可用
+    int x;          // 按钮左上角x坐标
+    int y;          // 按钮左上角y坐标
+    int width;      // 按钮宽度
+    int height;     // 按钮高度
+    string text;    // 按钮文本
+    bool isEnabled; // 按钮是否可用
 };
 
+/**
+ * 图形界面类
+ * 负责游戏的所有图形绘制和用户交互
+ */
 class Graphical
 {
 private:
-	Game* game;
-	CardCounter* counterPtr;
+    Game* game;
+    CardCounter* counterPtr;
 
-	// 存储每个玩家最近打出的牌
-	vector<vector<Card>> lastPlayerPlays;
+    // 游戏状态数据
+    vector<vector<Card>> lastPlayerPlays;  // 存储每个玩家最近打出的牌
 
-	//音乐
-	bool isMusicPlaying;
-	string currentMusic;
+    // 音乐相关
+    bool isMusicPlaying;
+    string currentMusic;
+
+    // 音量控制
+    float volumeLevel;        // 音量级别
+    Button volumeButton;      // 音量按钮
+    bool showVolumeSlider;    // 是否显示音量滑块
+    RECT volumeSliderRect;    // 音量滑块区域
+
 public:
-	Graphical(Game* g) :game(g),counterPtr(nullptr) { lastPlayerPlays = vector<vector<Card>>(4); }
-	void setGame(Game* game);
-	void setCardCounterPtr(CardCounter* counter) { counterPtr = counter; } // 添加设置 cardCounter 指针的方法
+    //初始化函数
+    Graphical(Game* g);
+    void setGame(Game* game);
+    void setCardCounterPtr(CardCounter* counter) { counterPtr = counter; }
+    void loadBackgroundImage();
 
-	
-	string getCardImageFileName(const Card& card);
-	
-	
-	void displayCard(const Card& card, int x, int y, int width, int height);
-	vector<CardRect> displayCards(const vector<Card>& cards); // 修改为返回卡片区域，参数改为非const引用
-	void displayAICards(const vector<Card>& cards, int num, int selectedIndex = -1);
+    //卡片绘制函数
+    string getCardImageFileName(const Card& card);
+    void displayCard(const Card& card, int x, int y, int width, int height);
+    vector<CardRect> displayCards(const vector<Card>& cards);
+    void displayAICards(const vector<Card>& cards, int num, int selectedIndex = -1);
+    void drawCards(vector<Card>& cards, int x, int y);
 
-	void drawCards(vector<Card>& cards,int x,int y);
+    //界面绘制函数
+    void drawUI(int index = -1);
+    void drawGameInfo();
+    void drawPlayerInfo(const shared_ptr<Player>& player, int pos);
+    void drawPlayerPlay(int pos);
+    void displayCurrentPlayer(int index);
+    void drawCardCounter();
 
-	void drawUI(int index = -1);
+    //按钮相关函数
+    Button createButton(int x, int y, int width, int height, const string& text, bool isEnabled = true);
+    void drawButton(const Button& button);
+    vector<Button> drawPlayButtons();
+    bool isPointInButton(int x, int y, const Button& button);
+    bool isPointInRect(int x, int y, const CardRect& rect);
 
+    //玩家出牌管理
+    void updateLastPlay(int index, const vector<Card>& cards);
+    void clearLastPlay(int index);
+    bool handleUserInput(vector<Card>& selectedCards, bool& isPass);
 
-	Button createButton(int x, int y, int width, int height, const string& text, bool isEnabled = true);
-	void drawButton(const Button& button);
-	vector<Button> drawPlayButtons(); // 绘制出牌和不出按钮
-	bool isPointInButton(int x, int y, const Button& button); // 检查点击是否在按钮内
-	bool isPointInRect(int x, int y, const CardRect& rect);
+    //开始和结束界面
+    void drawStartInterface();
+    bool handleStartInterfaceInput(int& gameMode);
+    void drawSettlementInterface(bool isGameOver = false);
+    bool handleSettlementInterfaceInput(bool& continueGame);
 
-	void drawGameInfo();
-	void drawPlayerInfo(const shared_ptr<Player>& player, int pos);
-	void drawPlayerPlay(int pos);
+    //音乐控制函数
+    void playBackgroundMusic(const string& musicFile);
+    void stopBackgroundMusic();
+    void checkAndUpdateGameMusic(int scoreFactor);
 
-	void updateLastPlay(int index, const vector<Card>& cards);
-	void clearLastPlay(int index);
+    //音量控制函数
+    void setVolume(float level);
+    float getVolume() const;
+    void drawVolumeControl();
+    bool handleVolumeControl(int x, int y);
 
-	void displayCurrentPlayer(int index);
-
-	bool handleUserInput(vector <Card>& selectedCards, bool& isPass);
-
-	void loadBackgroundImage();
-
-	void drawCardCounter();
-
-	void drawStartInterface();
-	bool handleStartInterfaceInput(int& gameMode);
-
-	void drawSettlementInterface(bool isGameOver = false);
-	bool handleSettlementInterfaceInput(bool& continueGame);
-
-	// 音乐相关函数
-	void playBackgroundMusic(const string& musicFile);
-	void stopBackgroundMusic();
-	void checkAndUpdateGameMusic(int scoreFactor); // 根据倍数检查和更新游戏音乐
-
+    //上贡还贡相关
+    void drawTributeInterface(const shared_ptr<Player>& fromPlayer, const shared_ptr<Player>& toPlayer, const Card& tributeCard);
+    void drawReturnTributeInterface(const shared_ptr<Player>& fromPlayer, const shared_ptr<Player>& toPlayer, const Card& returnCard);
+    Card handleTributeSelection(const shared_ptr<Player>& player);
+    Card handleReturnTributeSelection(const shared_ptr<Player>& player);
+    void animateCardTransfer(int fromPlayerIndex, int toPlayerIndex, const Card& card, bool isTribute);
 };
-//要画玩家手牌，ai玩家的名字排名、牌背面加上剩余牌数，上个出牌的牌

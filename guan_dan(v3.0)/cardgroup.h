@@ -1,118 +1,186 @@
 #pragma once
+
 #include "game.h"
 #include "card.h"
 #include <unordered_map>
 
-//cardgroup头文件包含了CardGroup类和它的子类，定义了牌组的类和它的子类，子类是所有的牌型
-//重载了>运算符，比较两个牌组的大小，通过调用每个子类的canBeat函数比较牌组大小
-//应该实现了癞子牌的功能，通过从大到小尝试创建牌组，看是否能够大过上家出牌
-//癞子牌的功能主要在牌组对>的重载中实现
+class CardGroupFactory;
 
-class CardGroupFactory; // 前向声明
-
+/**
+ * 卡牌组基类
+ */
 class CardGroup
 {
 protected:
-	vector<Card> cards;
-	Game& game;
-	unordered_map<Rank, int> rankCount; // 统计每种点数数量
-	void countRanks(); // 统计函数
+    vector<Card> cards;                  // 组成牌组的卡牌
+    Game& game;                          // 游戏引用
+    unordered_map<Rank, int> rankCount;  // 统计每种点数数量
+
+    /**
+     * 计算不同点数的数量
+     */
+    void countRanks();
+
 public:
-	CardGroup(vector<Card>& c,Game& gs) : cards(c), game(gs) { countRanks(); }
+    /**
+     * 构造函数
+     */
+    CardGroup(vector<Card>& c, Game& gs) : cards(c), game(gs) { countRanks(); }
 
-	virtual bool isValid() const = 0;
-	virtual bool canBeat(const CardGroup& other) const = 0;
+    /**
+     * 检查牌组是否符合规则
+     * @return 如果牌组有效则返回true
+     */
+    virtual bool isValid() const = 0;
 
-	bool operator>(const CardGroup& other);
-	vector<Card> getCards() const;
-	void setCards(const vector<Card>& c);
-	unordered_map<Rank, int> getRankCount() const; // 返回rankCount
+    /**
+     * 检查当前牌组是否能够打过另一个牌组
+     * @param other 其他牌组
+     * @return 如果能打过则返回true
+     */
+    virtual bool canBeat(const CardGroup& other) const = 0;
+
+    /**
+     * 比较运算符，检查当前牌组是否大于其他牌组
+     */
+    bool operator>(const CardGroup& other);
+
+    /**
+     * 获取牌组中的所有卡牌
+     * @return 卡牌集合
+     */
+    vector<Card> getCards() const;
+
+    /**
+     * 设置牌组中的卡牌
+     * @param c 新的卡牌集合
+     */
+    void setCards(const vector<Card>& c);
+
+    /**
+     * 获取点数统计信息
+     * @return 各点数数量的映射表
+     */
+    unordered_map<Rank, int> getRankCount() const;
 };
 
-class Single:public CardGroup
+/**
+ * 单张牌组
+ */
+class Single : public CardGroup
 {
 public:
-	Single(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
-	bool isValid() const override;
-	bool canBeat(const CardGroup& other) const override;
+    Single(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
+    bool isValid() const override;
+    bool canBeat(const CardGroup& other) const override;
 };
 
-class Pair :public CardGroup
+/**
+ * 对子牌组
+ */
+class Pair : public CardGroup
 {
 public:
-	Pair(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
-	bool isValid() const override;
-	bool canBeat(const CardGroup& other) const override;
+    Pair(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
+    bool isValid() const override;
+    bool canBeat(const CardGroup& other) const override;
 };
 
-class Triple :public CardGroup
+/**
+ * 三张牌组
+ */
+class Triple : public CardGroup
 {
 public:
-	Triple(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
-	bool isValid() const override;
-	bool canBeat(const CardGroup& other) const override;
+    Triple(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
+    bool isValid() const override;
+    bool canBeat(const CardGroup& other) const override;
 };
 
-class TripleWithPair :public CardGroup
+/**
+ * 三带二牌组
+ */
+class TripleWithPair : public CardGroup
 {
 public:
-	TripleWithPair(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
-	bool isValid() const override;
-	bool canBeat(const CardGroup& other) const override;
+    TripleWithPair(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
+    bool isValid() const override;
+    bool canBeat(const CardGroup& other) const override;
 };
 
-class Bomb :public CardGroup
+/**
+ * 炸弹牌组
+ */
+class Bomb : public CardGroup
 {
 public:
-	Bomb(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
-	bool isValid() const override;
-	bool canBeat(const CardGroup& other) const override;
+    Bomb(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
+    bool isValid() const override;
+    bool canBeat(const CardGroup& other) const override;
 };
 
-class TwoJokers :public CardGroup
+/**
+ * 双王（小王+大王）牌组
+ */
+class TwoJokers : public CardGroup
 {
 public:
-	TwoJokers(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
-	bool isValid() const override;
-	bool canBeat(const CardGroup& other) const override;
+    TwoJokers(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
+    bool isValid() const override;
+    bool canBeat(const CardGroup& other) const override;
 };
 
-class FourJokers :public CardGroup
+/**
+ * 四王炸（四个王）牌组
+ */
+class FourJokers : public CardGroup
 {
 public:
-	FourJokers(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
-	bool isValid() const override;
-	bool canBeat(const CardGroup& other) const override;
+    FourJokers(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
+    bool isValid() const override;
+    bool canBeat(const CardGroup& other) const override;
 };
 
-class Straight :public CardGroup
+/**
+ * 顺子牌组
+ */
+class Straight : public CardGroup
 {
 public:
-	Straight(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
-	bool isValid() const override;
-	bool canBeat(const CardGroup& other) const override;
+    Straight(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
+    bool isValid() const override;
+    bool canBeat(const CardGroup& other) const override;
 };
 
-class Flush :public CardGroup
+/**
+ * 同花顺牌组
+ */
+class Flush : public CardGroup
 {
 public:
-	Flush(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
-	bool isValid() const override;
-	bool canBeat(const CardGroup& other) const override;
+    Flush(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
+    bool isValid() const override;
+    bool canBeat(const CardGroup& other) const override;
 };
 
-class SteelPlate :public CardGroup
+/**
+ * 钢板（同点数多张）牌组
+ */
+class SteelPlate : public CardGroup
 {
 public:
-	SteelPlate(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
-	bool isValid() const override;
-	bool canBeat(const CardGroup& other) const override;
+    SteelPlate(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
+    bool isValid() const override;
+    bool canBeat(const CardGroup& other) const override;
 };
 
-class ConPairs :public CardGroup
+/**
+ * 连对牌组
+ */
+class ConPairs : public CardGroup
 {
 public:
-	ConPairs(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
-	bool isValid() const override;
-	bool canBeat(const CardGroup& other) const override;
+    ConPairs(vector<Card>& c, Game& gs) : CardGroup(c, gs) {}
+    bool isValid() const override;
+    bool canBeat(const CardGroup& other) const override;
 };

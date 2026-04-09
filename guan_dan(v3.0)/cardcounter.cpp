@@ -62,6 +62,7 @@ int CardCounter::getRemainingCountByRank(Rank rank) const {
 
 int CardCounter::getRemainingCountBySuit(Suit suit) const {
     int count = 0;
+
     if (suit == Joker) {
         count = remainingCards[suit][smal] + remainingCards[suit][big];
     }
@@ -70,6 +71,7 @@ int CardCounter::getRemainingCountBySuit(Suit suit) const {
             count += remainingCards[suit][r];
         }
     }
+
     return count;
 }
 
@@ -108,19 +110,26 @@ void CardCounter::displayStatistics() const {
     std::cout << "按点数统计: " << std::endl;
     std::cout << "-----------------" << std::endl;
     std::cout << "点数\t剩余数量" << std::endl;
+
+    // 遍历所有点数，显示每种点数的剩余数量
     for (int r = two; r <= ace; r++) {
         std::cout << std::left << std::setw(8);
+        // 对于特殊牌面值使用字母表示
         switch (r) {
-        case jack: cout << "J"; break;
+        case jack:  cout << "J"; break;
         case queen: cout << "Q"; break;
-        case king: cout << "K"; break;
-        case ace: cout << "A"; break;
-        default: cout << r; break;
+        case king:  cout << "K"; break;
+        case ace:   cout << "A"; break;
+        default:    cout << r; break;
         }
         cout << getRemainingCountByRank(static_cast<Rank>(r)) << "/8" << endl;
     }
+
+    // 显示大小王的剩余数量
     cout << "小王\t" << remainingCards[Joker][smal] << "/2" << endl;
     cout << "大王\t" << remainingCards[Joker][big] << "/2" << endl;
+
+    // 显示按花色统计的剩余牌
     cout << "\n按花色统计: " << endl;
     cout << "-----------------" << endl;
     cout << "花色\t剩余数量" << endl;
@@ -157,14 +166,15 @@ void CardCounter::displayStatisticsExcludePlayer(const vector<Card>& playerCards
     std::cout << "-----------------" << std::endl;
     std::cout << "点数\t剩余数量" << std::endl;
 
+    // 遍历所有点数，显示每种点数的调整后剩余数量
     for (int r = two; r <= ace; r++) {
         std::cout << std::left << std::setw(8);
         switch (r) {
-        case jack: cout << "J"; break;
+        case jack:  cout << "J"; break;
         case queen: cout << "Q"; break;
-        case king: cout << "K"; break;
-        case ace: cout << "A"; break;
-        default: cout << r; break;
+        case king:  cout << "K"; break;
+        case ace:   cout << "A"; break;
+        default:    cout << r; break;
         }
 
         // 计算该点数的调整后剩余数量
@@ -178,6 +188,7 @@ void CardCounter::displayStatisticsExcludePlayer(const vector<Card>& playerCards
     cout << "小王\t" << adjustedCards[Joker][smal] << "/2" << endl;
     cout << "大王\t" << adjustedCards[Joker][big] << "/2" << endl;
 
+    // 显示按花色统计的调整后剩余牌
     cout << "\n按花色统计: " << endl;
     cout << "-----------------" << endl;
     cout << "花色\t剩余数量" << endl;

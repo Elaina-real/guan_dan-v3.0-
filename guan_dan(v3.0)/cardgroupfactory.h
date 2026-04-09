@@ -5,8 +5,6 @@
 #include "player.h"
 #include <memory>
 
-// cardgroupfactory头文件包含了CardGroupFactory类，定义了牌组工厂类，用工厂方法（应该是）创建牌组
-
 class CardGroupFactory
 {
 public:

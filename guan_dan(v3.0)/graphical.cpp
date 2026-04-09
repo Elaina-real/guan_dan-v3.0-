@@ -7,6 +7,22 @@
 
 using namespace std;
 
+Graphical::Graphical(Game* g) :game(g), counterPtr(nullptr),
+currentMusic(""),
+volumeLevel(0.5f),
+showVolumeSlider(false)
+{
+    lastPlayerPlays = vector<vector<Card>>(4);
+    // 初始化音量控制按钮
+    volumeButton = createButton(1180, 670, 80, 30, "音量", true);
+
+    // 初始化音量滑块区域
+    volumeSliderRect.left = 1080;
+    volumeSliderRect.top = 630;
+    volumeSliderRect.right = 1230;
+    volumeSliderRect.bottom = 650;
+}
+
 void Graphical::setGame(Game* g)
 {
 	game = g;
@@ -278,13 +294,12 @@ void Graphical::drawUI(int index)
 
     loadBackgroundImage();
 
-    // 获取游戏信息
     auto players = game->getPlayers();
 
     // 1. 显示游戏状态信息（级别、倍数等）
     drawGameInfo();
 
-    // 2. 显示AI玩家的手牌
+    // 2. 显示AI玩家
     for (int i = 1; i < players.size(); i++) 
     {    
         displayAICards(players[i]->getHandCards(), i);
@@ -318,6 +333,9 @@ void Graphical::drawUI(int index)
 	// 8. 显示当前玩家出牌提示
     if(index != -1)
 	displayCurrentPlayer(index);
+
+    // 9. 绘制音量控制
+    drawVolumeControl();
 
     // 结束批量绘制，刷新屏幕
     EndBatchDraw();
@@ -507,6 +525,13 @@ bool Graphical::handleUserInput(vector<Card>& selectedCards, bool& isPass)
 
 
             if (msg.uMsg == WM_LBUTTONDOWN) {
+				// 检查是否点击了音量按钮
+				if (isPointInButton(msg.x, msg.y, volumeButton)) {
+					showVolumeSlider = !showVolumeSlider;  // 切换音量滑块显示状态
+					drawUI(0);  // 重绘界面以更新音量控制显示
+					continue;
+				}
+
                 // 检查是否点击了按钮
                 if (isPointInButton(msg.x, msg.y, playButton)) {
                     isPlay = true;
@@ -548,35 +573,52 @@ bool Graphical::handleUserInput(vector<Card>& selectedCards, bool& isPass)
                         // 使用双缓冲绘制，避免闪烁
                         BeginBatchDraw();
 
-                      
+
                         // 显示当前玩家手牌（更新后的）
                         cardRects = displayCards(players[0]->getHandCards());
 
-                      
+
 
                         // 结束批量绘制，刷新屏幕
                         EndBatchDraw();
 
                         break;  // 只处理最上层的卡片
 
-                //bool cardClicked = false;
-                //for (int i = cardRects.size() - 1; i >= 0; i--) {
-                //    // 检查点击区域 - 最后一张牌使用整个宽度，其他牌只使用前30像素
-                //    int effectiveWidth = (i == cardRects.size() - 1) ? cardRects[i].width : 30;
+                        //bool cardClicked = false;
+                        //for (int i = cardRects.size() - 1; i >= 0; i--) {
+                        //    // 检查点击区域 - 最后一张牌使用整个宽度，其他牌只使用前30像素
+                        //    int effectiveWidth = (i == cardRects.size() - 1) ? cardRects[i].width : 30;
 
-                //    if (msg.x >= cardRects[i].x && msg.x <= cardRects[i].x + effectiveWidth &&
-                //        msg.y >= cardRects[i].y && msg.y <= cardRects[i].y + cardRects[i].height) {
+                        //    if (msg.x >= cardRects[i].x && msg.x <= cardRects[i].x + effectiveWidth &&
+                        //        msg.y >= cardRects[i].y && msg.y <= cardRects[i].y + cardRects[i].height) {
 
-                //        // 切换卡片选中状态
-                //        playerCards[i].toggleSelected();
-                //        cardClicked = true;
+                        //        // 切换卡片选中状态
+                        //        playerCards[i].toggleSelected();
+                        //        cardClicked = true;
 
-                //        // 更新卡片位置信息 - 关键是这里要更新cardRects
-                //        drawUI();  // 重绘整个界面
-                //        cardRects = displayCards(playerCards);  // 获取新的卡片区域信息
+                        //        // 更新卡片位置信息 - 关键是这里要更新cardRects
+                        //        drawUI();  // 重绘整个界面
+                        //        cardRects = displayCards(playerCards);  // 获取新的卡片区域信息
 
-                //        break;  // 只处理最上层的卡片
+                        //        break;  // 只处理最上层的卡片
                     }
+                }
+            }
+            else if (msg.uMsg == WM_MOUSEMOVE && (msg.mkLButton)) {
+                // 处理拖动音量滑块
+                if (showVolumeSlider &&
+                    msg.x >= volumeSliderRect.left && msg.x <= volumeSliderRect.right) {
+
+                    // 计算新的音量级别
+                    float newVolume = (float)(msg.x - volumeSliderRect.left) /
+                        (float)(volumeSliderRect.right - volumeSliderRect.left);
+
+                    // 设置新音量
+                    setVolume(newVolume);
+
+                    // 重绘UI以更新音量控制显示
+                    drawUI(0);
+                    continue;
                 }
             }
         }
@@ -717,6 +759,11 @@ void Graphical::drawStartInterface() {
     // 绘制版权信息
     settextstyle(20, 0, _T("宋体"));
     outtextxy(520, 650, _T("版本 3.0 2025"));
+
+    // 绘制音量控制
+    drawVolumeControl();
+
+    FlushBatchDraw();
 }
 
 bool Graphical::handleStartInterfaceInput(int& gameMode) {
@@ -733,6 +780,13 @@ bool Graphical::handleStartInterfaceInput(int& gameMode) {
         msg = GetMouseMsg();
 
         if (msg.uMsg == WM_LBUTTONDOWN) {
+            // 检查音量控制
+            if (handleVolumeControl(msg.x, msg.y)) {
+                // 重绘界面
+                drawStartInterface(); // 或 drawSettlementInterface();
+                return false;
+            }
+
             // 检查点击的按钮
             if (isPointInButton(msg.x, msg.y, startButton)) {
                 gameMode = 1; // 开始游戏
@@ -749,12 +803,16 @@ bool Graphical::handleStartInterfaceInput(int& gameMode) {
 
                 settextstyle(20, 0, _T("宋体"));
                 int y = 120;
-                outtextxy(300, y, _T("1. 掼蛋是一种四人扑克牌游戏，分为两个阵营对抗")); y += 30;
-                outtextxy(300, y, _T("2. 游戏使用两副牌（去掉大小王共108张牌）")); y += 30;
-                outtextxy(300, y, _T("3. 每轮游戏有一个特定的级别牌")); y += 30;
-                outtextxy(300, y, _T("4. 第一位打完手牌的玩家获胜，最后一位输")); y += 30;
+                outtextxy(300, y, _T("1. 掼蛋是一种四人扑克牌游戏，分为两个阵营对抗，您与对面的玩家同阵营")); y += 30;
+                outtextxy(300, y, _T("2. 游戏使用两副牌（共108张牌）")); y += 30;
+                outtextxy(300, y, _T("3. 每轮游戏有一个特定的级别牌，级牌大于A小于小王")); y += 30;
+                outtextxy(300, y, _T("4. 按照打完手牌的顺序排名")); y += 30;
                 outtextxy(300, y, _T("5. 点击牌可以选中，再次点击取消选中")); y += 30;
                 outtextxy(300, y, _T("6. 点击出牌按钮打出选中的牌")); y += 30;
+                outtextxy(300, y, _T("7. 牌型包括单牌、对子、三张、三带二、炸弹、钢板、顺子与连对")); y += 30;
+                outtextxy(300, y, _T("8. 拥有癞子规则，红桃级牌为癞子，可以替代除大小王以外的任何牌")); y += 30;
+                outtextxy(300, y, _T("9. 拥有升级规则，一二位升三级，一三位升两级，一四位升一级")); y += 30;
+				outtextxy(300, y, _T("10. 拥有进贡规则，最后一个出完牌的玩家向第一个出完牌的玩家进贡")); y += 30;
 
                 // 返回按钮
                 Button backButton = createButton(540, 600, 200, 60, "返回");
@@ -778,7 +836,7 @@ bool Graphical::handleStartInterfaceInput(int& gameMode) {
                 return false;
             }
             else if (isPointInButton(msg.x, msg.y, rankingButton)) {
-                // 显示排行榜（可以在这里实现排行榜功能）
+                // 显示排行榜
                 cleardevice();
                 loadBackgroundImage();
 
@@ -786,7 +844,6 @@ bool Graphical::handleStartInterfaceInput(int& gameMode) {
                 settextstyle(40, 0, _T("宋体"));
                 outtextxy(500, 50, _T("排行榜"));
 
-                // 这里可以添加排行榜内容
                 settextstyle(20, 0, _T("宋体"));
                 outtextxy(450, 200, _T("未实装XD"));
 
@@ -814,6 +871,23 @@ bool Graphical::handleStartInterfaceInput(int& gameMode) {
             else if (isPointInButton(msg.x, msg.y, quitButton)) {
                 gameMode = 0; // 退出游戏
                 return true;
+            }
+        }
+        else if (msg.uMsg == WM_MOUSEMOVE && (msg.mkLButton)) {
+            // 处理拖动音量滑块
+            if (showVolumeSlider &&
+                msg.x >= volumeSliderRect.left && msg.x <= volumeSliderRect.right) {
+
+                // 计算新的音量级别
+                float newVolume = (float)(msg.x - volumeSliderRect.left) /
+                    (float)(volumeSliderRect.right - volumeSliderRect.left);
+
+                // 设置新音量
+                setVolume(newVolume);
+
+                // 重绘界面
+                drawStartInterface();
+                return false;
             }
         }
     }
@@ -970,16 +1044,18 @@ void Graphical::playBackgroundMusic(const string& musicFile) {
         return;
     }
 
-    // 停止当前正在播放的音乐
     stopBackgroundMusic();
 
     // 将文件名转换为宽字符串
     wstring wMusicFile(musicFile.begin(), musicFile.end());
 
-    // 播放新音乐 (SND_ASYNC|SND_LOOP 表示异步播放并循环)
+    // 播放新音乐
     if (PlaySound(wMusicFile.c_str(), NULL, SND_FILENAME | SND_ASYNC | SND_LOOP)) {
         isMusicPlaying = true;
         currentMusic = musicFile;
+
+        // 应用当前音量设置
+        setVolume(volumeLevel);
     }
 }
 
@@ -999,7 +1075,7 @@ void Graphical::checkAndUpdateGameMusic(int scoreFactor) {
         playBackgroundMusic("resource/dedede.wav");
     }
     else {
-        // 否则播放常规游戏音乐
+        // 播放常规音乐
         playBackgroundMusic("resource/Normal.wav");
     }
 }
@@ -1069,3 +1145,407 @@ void Graphical::checkAndUpdateGameMusic(int scoreFactor) {
 //    bigJokerText += to_wstring(game->cardCounter.getRemainingCount(Joker, big));
 //    outtextxy(x + 150, y, bigJokerText.c_str());
 //}
+
+// 绘制上贡界面
+void Graphical::drawTributeInterface(const shared_ptr<Player>& fromPlayer, const shared_ptr<Player>& toPlayer, const Card& tributeCard) {
+    // 清空屏幕并绘制背景
+    cleardevice();
+    loadBackgroundImage();
+
+    // 设置文本样式
+    settextcolor(WHITE);
+    settextstyle(30, 0, _T("宋体"));
+    setbkmode(TRANSPARENT);
+
+    // 显示上贡标题
+    wstring titleText = L"上贡";
+    outtextxy(600, 50, titleText.c_str());
+
+    // 显示玩家信息
+    string fromPlayerName = fromPlayer->getName();
+    wstring fromPlayerText = L"进贡方: ";
+    fromPlayerText += wstring(fromPlayerName.begin(), fromPlayerName.end());
+    outtextxy(400, 120, fromPlayerText.c_str());
+
+    string toPlayerName = toPlayer->getName();
+    wstring toPlayerText = L"接收方: ";
+    toPlayerText += wstring(toPlayerName.begin(), toPlayerName.end());
+    outtextxy(400, 170, toPlayerText.c_str());
+
+    // 显示上贡卡牌
+    settextstyle(20, 0, _T("宋体"));
+    outtextxy(400, 230, L"上贡卡牌:");
+    displayCard(tributeCard, 550, 220, 75, 104);
+
+    // 显示提示文本
+    settextstyle(20, 0, _T("宋体"));
+    outtextxy(400, 350, L"按任意键继续...");
+
+    // 显示动画效果
+    FlushBatchDraw();
+
+    Sleep(500);
+    return;
+}
+
+// 绘制还贡界面
+void Graphical::drawReturnTributeInterface(const shared_ptr<Player>& fromPlayer, const shared_ptr<Player>& toPlayer, const Card& returnCard) {
+    // 清空屏幕并绘制背景
+    cleardevice();
+    loadBackgroundImage();
+
+    // 设置文本样式
+    settextcolor(WHITE);
+    settextstyle(30, 0, _T("宋体"));
+    setbkmode(TRANSPARENT);
+
+    // 显示还贡标题
+    wstring titleText = L"还贡";
+    outtextxy(600, 50, titleText.c_str());
+
+    // 显示玩家信息
+    string fromPlayerName = fromPlayer->getName();
+    wstring fromPlayerText = L"还贡方: ";
+    fromPlayerText += wstring(fromPlayerName.begin(), fromPlayerName.end());
+    outtextxy(400, 120, fromPlayerText.c_str());
+
+    string toPlayerName = toPlayer->getName();
+    wstring toPlayerText = L"接收方: ";
+    toPlayerText += wstring(toPlayerName.begin(), toPlayerName.end());
+    outtextxy(400, 170, toPlayerText.c_str());
+
+    // 显示还贡卡牌
+    settextstyle(20, 0, _T("宋体"));
+    outtextxy(400, 230, L"还贡卡牌:");
+    displayCard(returnCard, 550, 220, 75, 104);
+
+    // 显示提示文本
+    settextstyle(20, 0, _T("宋体"));
+    outtextxy(400, 350, L"按任意键继续...");
+
+    // 显示动画效果
+    FlushBatchDraw();
+
+    Sleep(500);
+    return;
+}
+
+// 处理人类玩家上贡选择
+Card Graphical::handleTributeSelection(const shared_ptr<Player>& player) {
+    vector<Card>& playerCards = player->getHandCards();
+
+    // 找出玩家手牌中最大的牌
+    Card maxCard = playerCards[0];
+    for (const auto& card : playerCards) {
+        if (card > maxCard) {
+            maxCard = card;
+        }
+    }
+
+    // 清空屏幕并绘制背景
+    cleardevice();
+    loadBackgroundImage();
+
+    // 设置文本样式
+    settextcolor(WHITE);
+    settextstyle(30, 0, _T("宋体"));
+    setbkmode(TRANSPARENT);
+
+    // 显示上贡标题
+    wstring titleText = L"上贡选择";
+    outtextxy(550, 50, titleText.c_str());
+
+    // 显示说明文本
+    settextstyle(20, 0, _T("宋体"));
+    wstring descText = L"您需要贡献手牌中最大的牌:";
+    outtextxy(400, 120, descText.c_str());
+
+    // 显示将要上贡的卡牌
+    displayCard(maxCard, 550, 180, 75, 104);
+
+    // 创建确认按钮
+    Button confirmButton = createButton(550, 320, 120, 40, "确认上贡");
+    drawButton(confirmButton);
+
+    // 显示画面
+    FlushBatchDraw();
+
+    // 等待用户点击确认
+    MOUSEMSG msg;
+    bool confirmed = false;
+
+    while (!confirmed) {
+        if (MouseHit()) {
+            msg = GetMouseMsg();
+            if (msg.uMsg == WM_LBUTTONDOWN && isPointInButton(msg.x, msg.y, confirmButton)) {
+                confirmed = true;
+            }
+        }
+        Sleep(10); // 减轻CPU负担
+    }
+
+    return maxCard;
+}
+
+// 处理人类玩家还贡选择
+Card Graphical::handleReturnTributeSelection(const shared_ptr<Player>& player) {
+    vector<Card>& playerCards = player->getHandCards();
+    vector<Card> eligibleCards;
+
+    // 找出所有符合条件的牌（点数小于10）
+    for (const auto& card : playerCards) {
+        if (card.getRank() < ten) {
+            eligibleCards.push_back(card);
+        }
+    }
+
+    // 如果没有符合条件的牌，返回第一张牌（这种情况会在Player类中处理）
+    if (eligibleCards.empty()) {
+        settextcolor(RED);
+        settextstyle(24, 0, _T("宋体"));
+        outtextxy(400, 400, _T("没有可用的牌来还贡!"));
+        FlushBatchDraw();
+        Sleep(2000);
+        return Card(Heart, two); // 返回默认牌，但不会被实际使用
+    }
+
+    // 清空屏幕并绘制背景
+    cleardevice();
+    loadBackgroundImage();
+
+    // 设置文本样式
+    settextcolor(WHITE);
+    settextstyle(30, 0, _T("宋体"));
+    setbkmode(TRANSPARENT);
+
+    // 显示还贡标题
+    wstring titleText = L"还贡选择";
+    outtextxy(550, 50, titleText.c_str());
+
+    // 显示说明文本
+    settextstyle(20, 0, _T("宋体"));
+    wstring descText = L"请选择一张点数小于10的牌进行还贡:";
+    outtextxy(350, 100, descText.c_str());
+
+    // 显示所有可选牌
+    const int startX = 300;
+    const int startY = 150;
+    const int cardWidth = 75;
+    const int cardHeight = 104;
+    const int cardSpacing = 85;
+
+    vector<CardRect> cardRects;
+
+    for (int i = 0; i < eligibleCards.size(); i++) {
+        int x = startX + (i % 8) * cardSpacing;
+        int y = startY + (i / 8) * (cardHeight + 10);
+
+        displayCard(eligibleCards[i], x, y, cardWidth, cardHeight);
+
+        // 保存卡片区域信息
+        CardRect rect;
+        rect.x = x;
+        rect.y = y;
+        rect.width = cardWidth;
+        rect.height = cardHeight;
+        rect.index = i;
+        cardRects.push_back(rect);
+    }
+
+    // 显示提示文本
+    settextstyle(20, 0, _T("宋体"));
+    outtextxy(400, 400, L"点击一张牌选择还贡");
+
+    // 显示画面
+    FlushBatchDraw();
+
+    // 等待用户选择卡牌
+    MOUSEMSG msg;
+    int selectedCardIndex = -1;
+
+    while (selectedCardIndex == -1) {
+        if (MouseHit()) {
+            msg = GetMouseMsg();
+            if (msg.uMsg == WM_LBUTTONDOWN) {
+                // 检查是否点击了卡牌
+                for (const auto& rect : cardRects) {
+                    if (isPointInRect(msg.x, msg.y, rect)) {
+                        selectedCardIndex = rect.index;
+                        break;
+                    }
+                }
+            }
+        }
+        Sleep(10); // 减轻CPU负担
+    }
+
+    return eligibleCards[selectedCardIndex];
+}
+
+// 显示上贡或还贡的卡牌动画
+void Graphical::animateCardTransfer(int fromPlayerIndex, int toPlayerIndex, const Card& card, bool isTribute) {
+    //// 获取源位置和目标位置
+    //int startX, startY, endX, endY;
+
+    //// 根据玩家索引确定起始和终点位置
+    //switch (fromPlayerIndex) {
+    //case 0:
+    //    startX = 600; startY = 600;
+    //    break;
+    //case 1:
+    //    startX = 1150; startY = 350;
+    //    break;
+    //case 2:
+    //    startX = 600; startY = 100;
+    //    break;
+    //case 3:
+    //    startX = 50; startY = 350;
+    //    break;
+    //}
+
+    //switch (toPlayerIndex) {
+    //case 0:
+    //    endX = 600; endY = 600;
+    //    break;
+    //case 1:
+    //    endX = 1150; endY = 350;
+    //    break;
+    //case 2:
+    //    endX = 600; endY = 100;
+    //    break;
+    //case 3:
+    //    endX = 50; endY = 350;
+    //    break;
+    //}
+
+    //// 显示动画的文本（上贡或还贡）
+    //cleardevice();
+    //loadBackgroundImage();
+
+    //settextcolor(WHITE);
+    //settextstyle(30, 0, _T("宋体"));
+    //setbkmode(TRANSPARENT);
+
+    //if (isTribute) {
+    //    outtextxy(560, 50, _T("上贡"));
+    //}
+    //else {
+    //    outtextxy(560, 50, _T("还贡"));
+    //}
+
+    //const int animationFrames = 30;
+    //const int cardWidth = 75;
+    //const int cardHeight = 104;
+
+    //// 执行卡牌移动动画
+    //for (int frame = 0; frame <= animationFrames; frame++) {
+    //    // 清空之前的绘制内容，但保留背景
+    //    BeginBatchDraw();
+    //    loadBackgroundImage();
+
+    //    if (isTribute) {
+    //        outtextxy(560, 50, _T("上贡"));
+    //    }
+    //    else {
+    //        outtextxy(560, 50, _T("还贡"));
+    //    }
+
+    //    // 计算当前帧卡牌的位置
+    //    int currentX = startX + (endX - startX) * frame / animationFrames;
+    //    int currentY = startY + (endY - startY) * frame / animationFrames;
+
+    //    // 绘制卡牌
+    //    displayCard(card, currentX, currentY, cardWidth, cardHeight);
+
+    //    // 结束批量绘制，刷新屏幕
+    //    EndBatchDraw();
+
+    //    // 延迟以控制动画速度
+    //    Sleep(20);
+    //}
+
+    //// 动画结束后暂停一下
+    //Sleep(500);
+}
+
+// 设置音量
+void Graphical::setVolume(float level) {
+    volumeLevel = max(0.0f, min(1.0f, level));
+
+    // 使用Windows API设置系统音量
+    DWORD volume = (DWORD)(volumeLevel * 0xFFFF); // 转换为Windows音量格式 (0-65535)
+
+    // 设置所有音频设备的音量
+    waveOutSetVolume(NULL, volume | (volume << 16));
+}
+
+// 获取当前音量
+float Graphical::getVolume() const {
+    return volumeLevel;
+}
+
+// 绘制音量控制元素
+void Graphical::drawVolumeControl() {
+    // 绘制音量按钮
+    drawButton(volumeButton);
+
+    // 如果音量滑块可见，绘制音量滑块
+    if (showVolumeSlider) {
+        // 绘制滑块背景
+        setfillcolor(RGB(100, 100, 100));
+        setlinecolor(WHITE);
+        fillrectangle(volumeSliderRect.left, volumeSliderRect.top,
+            volumeSliderRect.right, volumeSliderRect.bottom);
+
+        // 计算当前音量位置
+        int sliderWidth = volumeSliderRect.right - volumeSliderRect.left;
+        int sliderPos = volumeSliderRect.left + (int)(volumeLevel * sliderWidth);
+
+        // 绘制滑块填充部分（已设置的音量）
+        setfillcolor(RGB(0, 122, 204));
+        fillrectangle(volumeSliderRect.left, volumeSliderRect.top,
+            sliderPos, volumeSliderRect.bottom);
+
+        // 绘制滑块控制点
+        setfillcolor(WHITE);
+        fillcircle(sliderPos, (volumeSliderRect.top + volumeSliderRect.bottom) / 2, 8);
+
+        // 显示当前音量百分比
+        settextcolor(WHITE);
+        settextstyle(16, 0, _T("宋体"));
+        setbkmode(TRANSPARENT);
+
+        TCHAR volumeText[20];
+        _stprintf_s(volumeText, _T("%d%%"), (int)(volumeLevel * 100));
+
+        // 将音量百分比文本放在滑块上方
+        int textX = volumeSliderRect.left;
+        int textY = volumeSliderRect.top - 25;
+        outtextxy(textX, textY, volumeText);
+    }
+}
+
+// 处理音量控制的鼠标事件
+bool Graphical::handleVolumeControl(int x, int y) {
+    // 检查是否点击了音量按钮
+    if (isPointInButton(x, y, volumeButton)) {
+        showVolumeSlider = !showVolumeSlider;
+        return true;
+    }
+
+    // 如果音量滑块可见且点击或拖动在滑块区域内
+    if (showVolumeSlider &&
+        x >= volumeSliderRect.left && x <= volumeSliderRect.right &&
+        y >= volumeSliderRect.top && y <= volumeSliderRect.bottom) {
+
+        // 计算新的音量级别
+        float newVolume = (float)(x - volumeSliderRect.left) /
+            (float)(volumeSliderRect.right - volumeSliderRect.left);
+
+        // 设置新音量
+        setVolume(newVolume);
+        return true;
+    }
+
+    return false;
+}
