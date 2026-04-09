@@ -1,4 +1,4 @@
-# 关丹卡牌游戏 (Guan Dan Card Game)
+# 掼蛋卡牌游戏 (Guan Dan Card Game)
 
 <div align="center">
 
